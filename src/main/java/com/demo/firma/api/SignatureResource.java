@@ -24,6 +24,7 @@ public class SignatureResource {
     @POST
     public Response createSignature() {
         SignatureOperation operation = signatureService.create();
+
         return Response.status(Response.Status.CREATED)
                 .entity(toResponse(operation))
                 .build();
@@ -32,12 +33,14 @@ public class SignatureResource {
     @GET
     @Path("/{signatureId}")
     public Map<String, Object> getSignature(
-            @PathParam("signatureId") String signatureId) {
+            @PathParam("signatureId") String signatureId
+    ) {
         return toResponse(signatureService.get(signatureId));
     }
 
     static Map<String, Object> toResponse(SignatureOperation operation) {
         Map<String, Object> response = new LinkedHashMap<>();
+
         response.put("signatureId", operation.getSignatureId());
         response.put("status", operation.getStatus().name());
         response.put("createdAt", operation.getCreatedAt());
@@ -46,10 +49,13 @@ public class SignatureResource {
         response.put("consentAt", operation.getConsentAt());
         response.put("biometricTransactionId", operation.getBiometricTransactionId());
         response.put("biometricValidatedAt", operation.getBiometricValidatedAt());
+        response.put("fido2Username", operation.getFido2Username());
+        response.put("fido2CredentialId", operation.getFido2CredentialId());
         response.put("fido2ConfirmationId", operation.getFido2ConfirmationId());
         response.put("fido2ConfirmedAt", operation.getFido2ConfirmedAt());
         response.put("signedDocumentAvailable", operation.getSignedBlobName() != null);
         response.put("evidenceAvailable", operation.getEvidenceBlobName() != null);
+
         return response;
     }
 }

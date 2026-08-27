@@ -1,8 +1,10 @@
 package com.demo.firma.api;
 
-import com.demo.firma.dto.Fido2VerifyRequest;
+import com.demo.firma.dto.WebAuthnAssertionOptionsRequest;
+import com.demo.firma.dto.WebAuthnAssertionVerifyRequest;
 import com.demo.firma.model.SignatureOperation;
 import com.demo.firma.service.SignatureService;
+import com.demo.firma.webauthn.WebAuthnService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -10,8 +12,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Path("/api/signatures/{signatureId}/webauthn")
@@ -21,19 +23,26 @@ public class WebAuthnResource {
     @Inject
     SignatureService signatureService;
 
+    @Inject
+    WebAuthnService webAuthnService;
+
     @POST
-    @Path("/challenge")
-    public Map<String, Object> createChallenge(
-            @PathParam("signatureId") String signatureId) {
+    @Path("/options")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response assertionOptions(
+            @PathParam("signatureId") String signatureId,
+            WebAuthnAssertionOptionsRequest request
+    ) {
+        SignatureOperation operation =
+                signatureService.getReadyForFido2(signatureId);
 
-        SignatureService.ChallengeResult result =
-                signatureService.createFido2Challenge(signatureId);
+        String json = webAuthnService.startSignatureAssertion(
+                signatureId,
+                request == null ? null : request.username(),
+                operation
+        );
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("challenge", result.challenge());
-        response.put("expiresAt", result.expiresAt());
-        response.put("mode", result.mode());
-        return response;
+        return Response.ok(json, MediaType.APPLICATION_JSON).build();
     }
 
     @POST
@@ -41,11 +50,26 @@ public class WebAuthnResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Map<String, Object> verify(
             @PathParam("signatureId") String signatureId,
-            Fido2VerifyRequest request) {
-
+            WebAuthnAssertionVerifyRequest request
+    ) {
         SignatureOperation operation =
-                signatureService.verifyFido2(signatureId, request);
+                signatureService.getReadyForFido2(signatureId);
 
-        return SignatureResource.toResponse(operation);
+        WebAuthnService.AssertionVerificationResult result =
+                webAuthnService.finishSignatureAssertion(
+                        signatureId,
+                        request == null ? null : request.credential(),
+                        operation
+                );
+
+        SignatureOperation confirmed = signatureService.confirmRealFido2(
+                signatureId,
+                result.username(),
+                result.credentialId(),
+                result.requestHash(),
+                result.contextHash()
+        );
+
+        return SignatureResource.toResponse(confirmed);
     }
 }

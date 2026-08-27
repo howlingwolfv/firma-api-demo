@@ -2,7 +2,6 @@ package com.demo.firma.service;
 
 import com.demo.firma.model.SignatureOperation;
 import com.demo.firma.storage.BlobStorageService;
-import com.demo.firma.util.HashUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +21,7 @@ public class EvidenceService {
     public String storeEvidence(SignatureOperation operation) {
         try {
             Map<String, Object> evidence = new LinkedHashMap<>();
+
             evidence.put("signatureId", operation.getSignatureId());
             evidence.put("status", operation.getStatus().name());
             evidence.put("createdAt", operation.getCreatedAt());
@@ -44,22 +44,30 @@ public class EvidenceService {
             evidence.put("biometric", biometric);
 
             Map<String, Object> fido2 = new LinkedHashMap<>();
-            fido2.put("challengeHash", operation.getFido2Challenge() == null
-                    ? null
-                    : HashUtils.sha256(operation.getFido2Challenge()));
+            fido2.put("username", operation.getFido2Username());
+            fido2.put("credentialId", operation.getFido2CredentialId());
+            fido2.put("requestHash", operation.getFido2RequestHash());
+            fido2.put("operationContextHash", operation.getFido2ContextHash());
             fido2.put("confirmationId", operation.getFido2ConfirmationId());
             fido2.put("confirmedAt", operation.getFido2ConfirmedAt());
-            fido2.put("mode", "DEMO");
+            fido2.put("mode", "WEBAUTHN_REAL");
             evidence.put("fido2", fido2);
 
-            byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(evidence);
+            byte[] json = objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsBytes(evidence);
 
-            String blobName = "evidence/" + operation.getSignatureId() + ".json";
+            String blobName =
+                    "evidence/" + operation.getSignatureId() + ".json";
+
             blobStorageService.upload(blobName, json, true);
             return blobName;
 
         } catch (Exception e) {
-            throw new IllegalStateException("No fue posible guardar el expediente de evidencias", e);
+            throw new IllegalStateException(
+                    "No fue posible guardar el expediente de evidencias",
+                    e
+            );
         }
     }
 }
