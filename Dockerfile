@@ -19,9 +19,4 @@ COPY --from=build /workspace/target/quarkus-app/quarkus/ /work/quarkus/
 
 EXPOSE 8080
 
-CMD [
-  "java",
-  "-XX:MaxRAMPercentage=75.0",
-  "-jar",
-  "/work/quarkus-run.jar"
-]
+CMD ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/work/quarkus-run.jar"]
