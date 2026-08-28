@@ -100,7 +100,7 @@ public class WebAuthnService {
 
         AuthenticatorSelectionCriteria authenticatorSelection =
                 AuthenticatorSelectionCriteria.builder()
-                        .residentKey(ResidentKeyRequirement.PREFERRED)
+                        .residentKey(ResidentKeyRequirement.REQUIRED)
                         .userVerification(UserVerificationRequirement.REQUIRED)
                         .build();
 
